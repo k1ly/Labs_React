@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 2</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        div {
+            margin: 10px;
+        }
+        input {
+            cursor: pointer;
+        }
+        .clock-params {
+            list-style: none;
+            margin: 0 10px;
+            padding: 0;
+        }
+        .clock-params li {
+            margin: 5px 0;
+        }
+        .job {
+            width: 30%; 
+            border: 1px solid black;
+        }
+        .job-menu {
+            padding: 10px;
+            background-color: rgb(202, 199, 199);
+        }
+        .job-menu ul {
+            list-style: none;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>Clock params</h1>
+        <ul class="clock-params">
+            <li><label for="timezone">Time zone</label></li>
+            <li><input id="timezone" type="text" name="timezone" value="+3:00" placeholder="Enter timezone"/></li>
+            <li><label for="format">Format</label></li>
+            <li>
+                <select id="format" name="format">
+                    <option value="24" selected>24</option>
+                    <option value="12">12</option>
+                </select>
+            </li>
+            <li>
+                <button id="submitClockParams" type="button" onclick="changeClockParams()">ОК</button>
+            </li>
+        </ul>
+    </div>
+    <div id="time"></div>
+
+    <div style="display: flex; justify-content: center;">
+        <div class="job">
+            <div id="job-list"></div>
+            <div id="job-menu"></div>
+        </div>
+    </div>
+
+    <script type="text/babel">
+        class Clock extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {date: new Date()};
+            }
+
+            componentDidMount() {
+                this.timerID = setInterval(() => this.tick(), 1000);
+            }
+
+            componentWillUnmount() {
+                clearInterval(this.timerID);
+            }
+
+            tick() {
+                this.setState({date: new Date()});
+            }
+
+            render() {
+                let date = this.state.date;
+                let hours;
+                let minutes;
+                let timezone = this.props.timezone.match(/^[+-]\d{1,2}:[0-5]0$/) ? this.props.timezone : null;
+                if(!timezone)
+                    throw "TimezoneFormatException : " + this.props.timezone;
+                else {
+                    hours = parseInt(timezone.substring(0, timezone.indexOf(":")));
+                    if(hours < -12 || hours > 14)
+                        throw "TimezoneValueException: " + hours;
+                    minutes = parseInt(timezone.substring(timezone.indexOf(":") + 1));
+                }
+                let format = parseInt(this.props.format);
+                let time = date.getUTCHours() * 60 + date.getUTCMinutes();
+                time += hours * 60 + (hours < 0 ? -minutes : minutes);
+                time %= 24 * 60;
+                time = time < 0 ? (24 * 60 + time) : time;
+                hours = Math.floor(time / 60);
+                minutes = Math.round(time % 60);
+                let hourPart = format === 12 ? (hours < 13 ? "AM" : "PM") : "";
+                return <h1>{format === 12 ? (hours === 12 ? 12 : hours % 12) : hours}:{minutes}:{date.getUTCSeconds()}{hourPart}</h1>
+            }
+        }
+
+        window.onload = changeClockParams;
+        function changeClockParams() {
+            let timezoneParam = document.getElementById("timezone").value;
+            let formatParam = document.getElementById("format").value;
+            try {
+                ReactDOM.render(<Clock format={formatParam} timezone={timezoneParam}/>, document.getElementById("time"));
+            } catch(e) {
+                alert(e);
+            }
+        }
+
+        const jobArray = [
+            {id: 1, name: "Job1"},
+            {id: 2, name: "Job2"},
+            {id: 3, name: "Job3"},
+            {id: 4, name: "Job4"}, 
+            {id: 5, name: "Job5"}
+        ]
+
+        const jobLinksArray = [
+            {id: 1, links: [
+                {url: "http:\\google.com", name: "Ссылка 1 1"},
+                {url: "http:\\google.com", name: "Ссылка 1 2"},
+                {url: "http:\\google.com", name: "Ссылка 1 3"},
+                {url: "http:\\google.com", name: "Ссылка 1 4"},
+                {url: "http:\\google.com", name: "Ссылка 1 5"},
+                {url: "http:\\google.com", name: "Ссылка 1 6"},
+                {url: "http:\\google.com", name: "Ссылка 1 7"}
+            ]},
+            {id: 2, links: [
+                {url: "http:\\google.com", name: "Ссылка 2 1"},
+                {url: "http:\\google.com", name: "Ссылка 2 2"},
+                {url: "http:\\google.com", name: "Ссылка 2 3"},
+                {url: "http:\\google.com", name: "Ссылка 2 4"},
+                {url: "http:\\google.com", name: "Ссылка 2 5"},
+                {url: "http:\\google.com", name: "Ссылка 2 6"},
+                {url: "http:\\google.com", name: "Ссылка 2 7"}
+            ]},
+            {id: 3, links: [
+                {url: "http:\\google.com", name: "Ссылка 3 1"},
+                {url: "http:\\google.com", name: "Ссылка 3 2"},
+                {url: "http:\\google.com", name: "Ссылка 3 3"},
+                {url: "http:\\google.com", name: "Ссылка 3 4"},
+                {url: "http:\\google.com", name: "Ссылка 3 5"},
+                {url: "http:\\google.com", name: "Ссылка 3 6"},
+                {url: "http:\\google.com", name: "Ссылка 3 7"}
+            ]},
+            {id: 4, links: [
+                {url: "http:\\google.com", name: "Ссылка 4 1"},
+                {url: "http:\\google.com", name: "Ссылка 4 2"},
+                {url: "http:\\google.com", name: "Ссылка 4 3"},
+                {url: "http:\\google.com", name: "Ссылка 4 4"},
+                {url: "http:\\google.com", name: "Ссылка 4 5"},
+                {url: "http:\\google.com", name: "Ссылка 4 6"},
+                {url: "http:\\google.com", name: "Ссылка 4 7"}
+            ]},
+            {id: 5, links: [
+                {url: "http:\\google.com", name: "Ссылка 5 1"},
+                {url: "http:\\google.com", name: "Ссылка 5 2"},
+                {url: "http:\\google.com", name: "Ссылка 5 3"},
+                {url: "http:\\google.com", name: "Ссылка 5 4"},
+                {url: "http:\\google.com", name: "Ссылка 5 5"},
+                {url: "http:\\google.com", name: "Ссылка 5 6"},
+                {url: "http:\\google.com", name: "Ссылка 5 7"}
+            ]}
+        ]
+
+        function JobList(props) {
+            return React.createElement("div", {}, <h3>Select your profession</h3>,
+            React.createElement("select", {id: "job-selection", onChange: changeJobMenu},
+            <>{props.array.map(value => <option value={value.id}>{value.name}</option>)}</>));
+        }
+
+        function JobMenu(props) {
+            return React.createElement("div", {className: "job-menu"}, <h3>Job Menu</h3>,
+             React.createElement("ul", {className: "job-menu"},
+             <>{props.jobInfo.links.map(value => <li><a href={value.url}>{value.name}</a></li>)}</>));
+        }
+
+        function changeJobMenu() {
+            let selectedJob = document.getElementById("job-selection").value;
+            ReactDOM.render(<JobMenu jobInfo={jobLinksArray.filter(job => job.id == selectedJob)[0]}/>, document.getElementById("job-menu"));
+        }
+
+        ReactDOM.render(<JobList array={jobArray}/>, document.getElementById("job-list"));
+        
+    </script>
+</body>
+</html>

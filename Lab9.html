@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 9</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .sort-table, .sort-table td, .sort-table th {
+            padding: 5px;
+            border: 1px solid black;
+        }
+        .sort-table th {
+            background-color: gray;
+            color: white;
+        }
+        .sort-table th.attribute {
+            cursor: pointer;
+        }
+        .sort-table .few {
+            background-color: yellow;
+        }
+        .sort-table .none {
+            background-color: red;
+        }
+        .catalog-header {
+            list-style: none;
+            display: inline-flex;
+            justify-content: space-around;
+            margin: 0;
+            padding: 0;
+            width: 50%;
+            float: right;
+        }
+        .catalog-header li {
+            padding: 10px;
+            box-shadow: 0px 0px 10px 3px rgb(0 0 0 / 88%);
+            background-color: aliceblue;
+            color: rgb(10, 73, 190);;
+            font-weight: 500;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="sort-table"></div>
+    <div id="catalog"></div>
+
+    <script type="text/babel">
+
+        const productArray = [
+                {name: "Butter", price: 3.40, quantity: 30,
+                    image: "https://freight.cargo.site/i/37cc760e6c63a6591e874bd90c14f5c22afc16b227817a37310aedd4b5a04507/free-png-butter-png-images-transparent-butter-png-850_559.png",
+                    description: "This is very good butter", isNew: false, discount: 50},
+                {name: "Fish", price: 12.80, quantity: 0,
+                    image: "https://media.istockphoto.com/photos/fresh-fish-picture-id486874340?k=20&m=486874340&s=612x612&w=0&h=k1yoT_NUehTP5GoN7dhGeceMCK5ZrGMaJ6L4Fd7ILAs=",
+                    description: "This is very good fish", isNew: true, discount: 10},
+                {name: "Water", price: 10.30, quantity: 11,
+                    image: "https://media.istockphoto.com/photos/bottle-of-spring-water-picture-id185072125?k=20&m=185072125&s=612x612&w=0&h=QM7Ejzdq_hGjtW6iI8i7Nkm1EW8VuITy4lzikfeaRVE=",
+                    description: "This is very good water", isNew: false, discount: 0},
+                {name: "Milk", price: 6.10, quantity: 25,
+                    image: "https://media.istockphoto.com/photos/milk-box-picture-id521855811?k=20&m=521855811&s=612x612&w=0&h=nfc2IF2_zpH5Ei1dAJLzBmyTOb9YAZ7G5tfrY2wB6uE=",
+                    description: "This is very good milk", isNew: false, discount: 0},
+                {name: "Cheese", price: 15.00, quantity: 14,
+                    image: "https://media.istockphoto.com/photos/piece-of-cheese-isolated-picture-id500454774?k=20&m=500454774&s=612x612&w=0&h=5Og4NA85MGLyk8QUTZaXwaXus7jdEWP_maTDMLSB9ok=",
+                    description: "This is very good cheese", isNew: true, discount: 15}, 
+                {name: "Sausage", price: 9.30, quantity: 71,
+                    image: "https://media.istockphoto.com/photos/cooked-sausage-piled-together-with-a-white-background-picture-id170222471?k=20&m=170222471&s=612x612&w=0&h=Gl8Ea7lRgElGIddLAyiPQWYGPQL9-HCed2NCXVZ_oNw=",
+                    description: "This is very good sausage", isNew: false, discount: 30},
+                {name: "Chocolate", price: 4.60, quantity: 2,   
+                    image: "https://media.baamboozle.com/uploads/images/74699/1618534876_48012_url.jpeg",
+                    description: "This is very good chocolate", isNew: true, discount: 0}
+            ]
+
+        class SortTable extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {};
+                this.handleSort = this.handleSort.bind(this);
+            }
+
+            handleSort(e) {
+                this.setState(prevState => ({attribute: e.target.dataset.name, asc: prevState.asc && prevState.attribute == e.target.dataset.name ? !prevState.asc : true}));
+            }
+
+            render() {
+                let asc = this.state.asc;
+                let comparator;
+                switch(this.state.attribute) {
+                    case "name": comparator = (a, b) => a.name == b.name ? 0 : (asc ? (a.name > b.name ? 1 : -1) : (a.name < b.name ? 1 : -1)); break;
+                    case "price": comparator = (a, b) => a.price == b.price ? 0 : (asc ? (a.price > b.price ? 1 : -1) : (a.price < b.price ? 1 : -1)); break;
+                    case "quantity": comparator = (a, b) => a.quantity == b.quantity ? 0 : (asc ? (a.quantity > b.quantity ? 1 : -1) : (a.quantity < b.quantity ? 1 : -1)); break;
+                    case "discount": comparator = (a, b) => a.discount == b.discount ? 0 : (asc ? (a.discount > b.discount ? 1 : -1) : (a.discount < b.discount ? 1 : -1)); break;
+                }
+                this.props.array = this.props.array.sort(comparator);
+                let sort = asc != undefined ? (<svg style={{width: "10px", height: "10px"}}>
+                    <polygon points={asc ? "0,10 10,10 5,0" : "0,0 10,0 5,10"} style={{fill: "black"}}/></svg>) : null;
+                let header =
+                    <tr><th>№</th>
+                    <th className="attribute" data-name="name" onClick={(e) => this.handleSort(e)}>Название {this.state.attribute == "name" ? sort : null}</th>
+                    <th className="attribute" data-name="price" onClick={(e) => this.handleSort(e)}>Цена {this.state.attribute == "price" ? sort : null}</th>
+                    <th className="attribute" data-name="quantity" onClick={(e) => this.handleSort(e)}>Кол-во {this.state.attribute == "quantity" ? sort : null}</th>
+                    <th className="attribute" data-name="image">Изображение</th>
+                    <th className="attribute" data-name="description">Описание</th>
+                    <th className="attribute" data-name="isNew">Новинка</th>
+                    <th className="attribute" data-name="discount" onClick={(e) => this.handleSort(e)}>Скидка {this.state.attribute == "discount" ? sort : null}</th></tr>;
+                const rowArray = <>{this.props.array.map((value, index) => React.createElement("tr", value.quantity == 0 ? {className: "none"}
+                : (value.quantity < 3 ? {className: "few"} : {}), <>
+                    <td>{index}</td><td>{value.name}</td><td>{value.price}</td><td>{value.quantity}</td>
+                    <td><img src={value.image} style={{maxWidth: "200px", maxHeight: "200px"}}/></td>
+                    <td>{value.description}</td><td>{value.isNew ? "Новинка" : ""}</td><td>{value.discount > 0 ? value.discount + "%" : ""}</td>
+                </>))}</>
+                return <div style={{display: "flex", justifyContent: "center", padding: "20px", border: "10px solid #86868685"}}>{React.createElement("table", {className: "sort-table"}, header, rowArray)}</div>;
+            }
+        }
+
+        ReactDOM.render(<SortTable array={productArray}/>, document.getElementById("sort-table"));
+
+        class Catalog extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {};
+                this.handleSort = this.handleSort.bind(this);
+            }
+
+            handleSort(e) {
+                this.setState(prevState => ({attribute: e.target.dataset.name, asc: prevState.asc && prevState.attribute == e.target.dataset.name ? !prevState.asc : true}));
+            }
+
+            render() {
+                let asc = this.state.asc;
+                let comparator;
+                switch(this.state.attribute) {
+                    case "name": comparator = (a, b) => a.name == b.name ? 0 : (asc ? (a.name > b.name ? 1 : -1) : (a.name < b.name ? 1 : -1)); break;
+                    case "price": comparator = (a, b) => a.price == b.price ? 0 : (asc ? (a.price > b.price ? 1 : -1) : (a.price < b.price ? 1 : -1)); break;
+                    case "quantity": comparator = (a, b) => a.quantity == b.quantity ? 0 : (asc ? (a.quantity > b.quantity ? 1 : -1) : (a.quantity < b.quantity ? 1 : -1)); break;
+                    case "discount": comparator = (a, b) => a.discount == b.discount ? 0 : (asc ? (a.discount > b.discount ? 1 : -1) : (a.discount < b.discount ? 1 : -1)); break;
+                }
+                let products = this.props.array.sort(comparator).sort((a, b) => a.isNew && !b.isNew ? -1 : (!a.isNew && b.isNew ? 1 : 0));
+                let sort = asc != undefined ? (<svg style={{width: "10px", height: "10px"}}>
+                    <polygon points={asc ? "0,10 10,10 5,0" : "0,0 10,0 5,10"} style={{fill: "black"}}/></svg>) : null;
+                let header = <div style={{display: "flex", justifyContent: "flex-end", width: "100%"}}><ul className="catalog-header">
+                    <li data-name="name" style={this.state.attribute == "name" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={(e) => this.handleSort(e)}>Название {this.state.attribute == "name" ? sort : null}</li>
+                    <li data-name="price" style={this.state.attribute == "price" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={(e) => this.handleSort(e)}>Цена {this.state.attribute == "price" ? sort : null}</li>
+                    <li data-name="quantity" style={this.state.attribute == "quantity" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={(e) => this.handleSort(e)}>Кол-во {this.state.attribute == "quantity" ? sort : null}</li>
+                    <li data-name="discount" style={this.state.attribute == "discount" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={(e) => this.handleSort(e)}>Скидка {this.state.attribute == "discount" ? sort : null}</li>
+                </ul></div>;
+                const createRow = (value, index) => React.createElement("tr", {key: value.name,
+                    style: {height: "300px", border: index % 2 == 0 ? "solid rgb(236, 236, 236)" : null}}, <>
+                    <td style={{padding: "0 0 0 10%"}}><div style={{margin: "5px", width: "280px", height: "280px",
+                        backgroundImage: "url(" + value.image + ")", backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat"}}>
+                        <div style={{lineHeight: "30px"}}>
+                            {value.isNew ? <div style={{display: "inline-block", margin: "5px", width: "100px", backgroundColor: "#b4b4b4", color: "#242424", textAlign: "center"}}>
+                                Новинка</div> : null}
+                        {value.discount > 0 ? <div style={{display: "inline-block", margin: "5px", width: "100px", backgroundColor: "rgb(231, 50, 18)", color: "white", textAlign: "center"}}>
+                            {value.discount}%</div> : null}
+                        </div></div></td>
+                    <td style={{padding: "0 0 0 10%"}}><div style={{fontSize: "25px", fontWeight: "600"}}>{value.name}</div>
+                        <div>
+                            <div style={{display: "inline-block", fontSize: "20px", fontWeight: "500"}}>{Math.round((100 - value.discount) / 100 * value.price)} руб.</div>
+                            {value.discount > 0 ? <div style={{display: "inline-block", margin: "0 10px", color: "#bcbaba", fontSize: "15px", fontWeight: "500", textDecoration: "line-through"}}>
+                                {value.price} руб.</div> : null}
+                        </div>
+                        <div style={{fontWeight: "700"}}>Количество  {value.quantity} шт.</div>
+                        <div>{value.description}</div></td>
+                </>);
+                return <div style={{display: "flex", justifyContent: "center", padding: "20px"}}><div style={{width: "100%"}}>{header}
+                    <div style={{display: "flex", justifyContent: "center", padding: "20px"}}>
+                        {React.createElement("table", {width: "60%"}, <tbody>{products.map(createRow)}</tbody>)}
+                    </div></div></div>;
+            }
+        }
+
+        ReactDOM.render(<Catalog array={productArray}/>, document.getElementById("catalog"));
+    
+    </script>
+</body>
+</html>

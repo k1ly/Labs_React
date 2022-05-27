@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 1</title>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        div {
+            margin: 10px 0;
+        }
+        .stockTable, .stockTable td, .chessTable {
+            border: 1px solid black;
+        }
+        .stockTable th {
+            background-color: rgb(59, 59, 59);
+            color: white;
+        }
+        .changeDown {
+            background-color: rgb(230, 20, 20);
+        }
+        .changeUp {
+            background-color: rgb(6, 179, 6);
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+        }
+        .white {
+            background-color: white;
+        }
+        .black {
+            background-color: black;
+        }
+        .chessBorder {
+            background-color: wheat;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <div id="time"></div>
+    <button onclick="showTable()">Показать таблицу</button>
+    <div id="table"></div>
+    <button onclick="showChessTable()">Открыть шахматную доску</button>
+    <div id="chess"></div>
+    <script type="text/babel">
+        ReactDOM.render(
+            <h1>Current time:</h1>,
+            document.getElementById('root')
+        );
+        var date = new Date();
+        ReactDOM.render(
+            <h1>{date.getHours()}:{date.getMinutes()}:{date.getSeconds()}</h1>,
+            document.getElementById('time')
+        );
+
+        var stocks = [{
+            stock_name: "EFX",
+            company_name: "Equifax Inc",
+            price: 163.55,
+            currency: "USD",
+            change: "+9.03"
+        }, {
+            stock_name: "IRM",
+            company_name: "Iron Mountain Inc",
+            price: 33.21,
+            currency: "USD",
+            change: "+1.42"
+        }, {
+            stock_name: "NTAP",
+            company_name: "NetApp Inc",
+            price: 54.81,
+            currency: "USD",
+            change: "-6.01"
+        }, {
+            stock_name: "CTL",
+            company_name: "Centurylink Inc",
+            price: 13.79,
+            currency: "USD",
+            change: "-1.37"
+        }]
+
+        function showTable() {
+            let header =
+                <tr>
+                    <th>Название</th>
+                    <th>Компания</th>
+                    <th>Цена</th>
+                    <th>Валюта</th>
+                    <th>Изменение</th>
+                </tr>
+            let stockRows = [];
+            for (let i = 0; i < stocks.length; i++) {
+                let change = parseFloat(stocks[i].change);
+                let stockChange = React.createElement("td", change < 0 ? {className: "changeDown"} : (change > 0 ? {className: "changeUp"} : {}), stocks[i].change);
+                let row = React.createElement("tr", {}, 
+                    <>
+                        <td>{stocks[i].stock_name}</td>
+                        <td>{stocks[i].company_name}</td>
+                        <td>{stocks[i].price}</td>
+                        <td>{stocks[i].currency}</td>
+                        {stockChange}
+                    </>
+                );
+                stockRows.push(row);
+            }
+            let table = React.createElement("table", {className: "stockTable"}, <>{header}{stockRows}</>);
+            ReactDOM.render(table, document.getElementById("table"));
+        }
+
+        function showChessTable() {
+            let table = [];
+            for(let i = 0; i < 10; i++) {
+                if(i > 0 && i < 9) {
+                    let row = [];
+                    for(let j = 0; j < 10; j++) {
+                        if(j > 0 && j < 9) {
+                            let index = i + j;
+                            let cell = React.createElement("td", index % 2 == 0 ? {className: "cell white"} : {className: "cell black"});
+                            row.push(cell);
+                        } else {
+                            row.push(createNumberNotation(i));
+                        }
+                    }
+                    table.push(React.createElement("tr", {}, row));
+                } else {
+                    table.push(createCharNotation());
+                }
+            }
+            let chessTable = React.createElement("table", {className: "chessTable"}, table);
+            ReactDOM.render(chessTable, document.getElementById("chess"));
+        }
+
+        function createCharNotation() {
+            let charset = ["a", "b", "c", "d", "e", "f", "g", "h"];
+            let row = [];
+            for(let j = 0; j < 10; j++) {
+                let char = React.createElement("td", {className: "chessBorder"}, j > 0 && j < 9 ? charset[j - 1] : "");
+                row.push(char);
+            }
+            return React.createElement("tr", {}, row);
+        }
+
+        function createNumberNotation(index) {
+            return React.createElement("td", {className: "chessBorder"}, 9 - index);
+        }
+        
+    </script>
+</body>
+</html>

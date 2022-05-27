@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 7</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .calendar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px;
+            height: 50vh;
+        }
+        .calendar {
+            display: inline-block;
+            overflow: hidden;
+            border: 1px solid gray;
+            border-radius: 10px;
+        }
+        .calendar th, .calendar td {
+            padding: 10px;
+        }
+        .calendar-head {
+            background-color: rgb(185, 185, 185);
+            width: 100%;
+        }
+        .calendar-head button {
+            padding: 10px;
+            background-color: rgb(185, 185, 185);
+            border: none;
+        }
+        .calendar-head button:hover {
+            background-color: rgb(128, 128, 128);
+            color: white;
+        }
+        .calendar-body td {
+            cursor: pointer;
+        }
+        .calendar-body .today {
+            background-color: rgb(194, 194, 194);
+        }
+        .calendar-body .this-month {
+            background-color: rgb(253, 253, 253);
+        }
+        .calendar-body .not-this-month {
+            background-color: rgb(235, 235, 235);
+            color: rgb(143, 143, 143)
+        }
+        .calendar-body .selected {
+            background-color: rgb(22, 221, 138);
+        }
+        .calendar-body .selected-today {
+            background-color: rgb(14, 115, 231);
+            color: rgb(255, 255, 255)
+        }
+        .note {
+            margin: 10px auto;
+            padding: 10px;
+            width: 20%;
+            border: 1px solid black;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="scheduler"></div>
+
+    <script type="text/babel">
+
+        class Notes extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {};
+                this.addNote = this.addNote.bind(this);
+                this.handleHeaderChange = this.handleHeaderChange.bind(this);
+                this.handleTextChange = this.handleTextChange.bind(this);
+                this.removeFirst = this.removeFirst.bind(this);
+                this.removeLast = this.removeLast.bind(this);
+                this.clear = this.clear.bind(this);
+                this.handleNoteEdit = this.handleNoteEdit.bind(this);
+                this.handleEditChange = this.handleEditChange.bind(this);
+                this.handleEditSave = this.handleEditSave.bind(this);
+            }
+
+            notes = [];
+
+            addNote(e) {
+                this.notes.push({header: this.state.header, date: this.props.date, text: this.state.text});
+                this.setState({header: "", text: ""});
+                e.preventDefault();
+            }
+
+            handleHeaderChange(e) {
+                this.setState({header: e.target.value});
+            }
+
+            handleTextChange(e) {
+                this.setState({text: e.target.value});
+            }
+
+            removeFirst() {
+                this.notes.shift();
+                this.setState({});
+            }
+
+            removeLast() {
+                this.notes.pop();
+                this.setState({});
+            }
+
+            clear() {
+                this.notes = [];
+                this.setState({});
+            }
+
+            handleNoteEdit(e) {
+                this.setState({editing: e.target.value});
+            }
+
+            handleEditChange(e) {
+                this.setState({editingText: e.target.value});
+            }
+
+            handleEditSave(e) {
+                let editing = this.notes.filter(note => note.header == this.state.editing)[0];
+                editing.text = this.state.editingText;
+                this.setState({editing: null, editingText: null});
+            }
+
+            render() {
+                return this.props.date ? <>
+                    {React.createElement("form", {onSubmit: this.addNote}, <div className="note">
+                        <h1 style={{textAlign: "center"}}>Заметка</h1>
+                        <div><label style={{width: "100%"}}>Заголовок заметки<br/>
+                            <input style={{width: "100%"}} type="text" value={this.state.header} onChange={(e) => this.handleHeaderChange(e)}/></label></div>
+                        <div><label style={{width: "100%"}}>Введите текст<br/>
+                            <textarea style={{width: "100%"}} value={this.state.text} onChange={(e) => this.handleTextChange(e)}/></label></div>
+                        <div><input style={{width: "100%"}} type="submit" value="Добавить заметку"/></div>
+                    </div>)}
+                    <div><button style={{margin: "0 20px"}} onClick={this.removeFirst}>Удалить первую</button>
+                        <button style={{margin: "0 20px"}} onClick={this.clear}>Очистить</button>
+                        {this.notes.length > 3 ? <button style={{margin: "0 20px"}} onClick={this.removeLast}>Удалить последнюю</button> : null}</div>
+                    {this.notes.length > 8 ? <div style={{color: "red", textAlign: "center"}}>У вас слишком много заметок!</div> : null}
+                    {this.props.render(this.notes, this.handleNoteEdit, this.state.editing, this.handleEditChange, this.handleEditSave)}
+                </> : null;
+            }
+        }
+
+        function NotesViewer(props) {
+            let notes = [];
+            for(let i = 0; i < props.notes.length; i++) {
+                let note = props.notes[i];
+                notes.push(<li style={{backgroundColor: (props.notes.length > 8 && i > 7 ? "red" : "yellow")}}>
+                    <div style={{margin: "10px"}}>{note.header}<br/>{note.date.toString()}<br/>
+                        {props.editing == note.header ? <><textarea style={{width: "40%"}} onChange={(e) => props.onEditChange(e)}/>
+                            <button onClick={(e) => props.onEditSave(e)} style={{margin: "10px"}}>Сохранить</button></> : note.text}
+                    </div>
+                    {props.editing != note.header ? <button style={{margin: "10px"}} value={note.header} onClick={(e) => props.onNoteEdit(e)}>Изменить</button> : null}
+                </li>);
+            }
+            return React.createElement("ul", {style: {listStyle: "none", overflow: "hidden"}}, notes);
+        }
+
+        class CalendarHead extends React.Component {
+            constructor(props) {
+                super(props);
+                this.handleClick = this.handleClick.bind(this);
+            }
+
+            handleClick(e) {
+                this.props.onMonthScroll(e.target.dataset.month, e.target.dataset.year);
+            }
+
+            render() {
+                return React.createElement("div", {className: "calendar-head"}, <>
+                <div>
+                    <span style={{display: "inline-block", padding: "10px"}}>{this.props.months[this.props.date.getMonth()]} {this.props.date.getFullYear()}</span>
+                    <span style={{float: "right"}}>
+                        <button data-month={this.props.date.getMonth() > 0 ? this.props.date.getMonth() - 1 : 11}
+                            data-year={this.props.date.getMonth() > 0 ? this.props.date.getFullYear() : this.props.date.getFullYear() - 1}
+                            onClick={(e) => this.handleClick(e)}>&lt;</button>
+                        <button data-month={this.props.date.getMonth() < 11 ? this.props.date.getMonth() + 1 : 0}
+                            data-year={this.props.date.getMonth() < 11 ? this.props.date.getFullYear() : this.props.date.getFullYear() + 1}
+                            onClick={(e) => this.handleClick(e)}>&gt;</button>
+                    </span>
+                </div>
+                <table><tr>{this.props.days.map(day => <td>{day}</td>)}</tr></table>
+                </>);
+            }
+        }
+
+        class CalendarBody extends React.Component {
+            constructor(props) {
+                super(props);
+                this.handleClick = this.handleClick.bind(this);
+            }
+
+            handleClick(e) {
+                let date = new Date();
+                date.setFullYear(e.target.dataset.year);
+                date.setMonth(e.target.dataset.month);
+                date.setDate(e.target.dataset.day);
+                this.props.onDaySelect(date);
+            }
+
+            calculateDayAmount(month, year) {
+                let dayAmount = month == 2 ? (year % 4 == 0 ? 29 : 28)
+                : ((month == 4 || month == 6 || month == 9 || month == 11) ? 30: 31);
+                return dayAmount;
+            }
+            
+            render() {
+                let date = this.props.date;
+                let month = [];
+                let prevMonth = date.getMonth() > 0 ? date.getMonth() - 1 : 11;
+                let prevMonthYear =  date.getMonth() > 0 ? date.getFullYear() : date.getFullYear() - 1;
+                let prevMonthDayAmount = this.calculateDayAmount(prevMonth, prevMonthYear);
+                let first = new Date(date.getFullYear(), date.getMonth(), 0);
+                for(let i = prevMonthDayAmount - first.getDay() + 1; i < prevMonthDayAmount; i++) {
+                    month.push(new Date(prevMonthYear, prevMonth, i));
+                }
+                let dayAmount = this.calculateDayAmount(date.getMonth() + 1, date.getFullYear());
+                for(let i = 0; i < dayAmount; i++) {
+                    month.push(new Date(date.getFullYear(), date.getMonth(), i));
+                }
+                let nextMonth = date.getMonth() < 11 ? date.getMonth() + 1 : 0;
+                let nextMonthYear =  date.getMonth() < 11 ? date.getFullYear() : date.getFullYear() + 1;
+                let nextMonthDayAmount = this.calculateDayAmount(nextMonth, nextMonthYear);
+                let last = new Date(date.getFullYear(), date.getMonth(), dayAmount - 1);
+                for(let i = 0; i < nextMonthDayAmount - last.getDay(); i++) {
+                    month.push(new Date(nextMonthYear, nextMonth, i));
+                }
+                let weeks = [];
+                for(let i = 0, week = [], isThisMonth = false; i < month.length + 1; i++) {
+                    if(i % 7 == 0) {
+                        weeks.push(<tr>{week}</tr>);
+                        week = [];
+                        if(weeks.length == 7)
+                            break;
+                    }
+                    let includes = false;
+                    for(let j = 0; j < this.props.selected.length; j++) {
+                        let day = this.props.selected[j];
+                        if(month[i].getFullYear() == day.getFullYear() && month[i].getMonth() == day.getMonth() && month[i].getDate() == day.getDate()) {
+                            includes = true;
+                            break;
+                        }
+                    }
+                    week.push(<td className={includes ?
+                        (month[i].getFullYear() == this.props.today.getFullYear() && month[i].getMonth() == this.props.today.getMonth()
+                         && month[i].getDate() == this.props.today.getDate() ? "selected-today" : "selected")
+                    : (month[i].getMonth() == date.getMonth() ? (month[i].getFullYear() == this.props.today.getFullYear() && month[i].getMonth() == this.props.today.getMonth()
+                         && month[i].getDate() == this.props.today.getDate() ? "today" : "this-month") : "not-this-month")}
+                    data-year={month[i].getFullYear()} data-month={month[i].getMonth()} data-day={month[i].getDate()}
+                    onClick={(e) => {this.handleClick(e)}}>{month[i].getDate()}</td>)
+                }
+                return React.createElement("table", {className: "calendar-body"}, weeks);
+            }
+        }
+
+        function linkToCalendar(WrappedComponent) {
+            return class extends React.Component {
+                    constructor(props) {
+                    super(props);
+                    let date = new Date();
+                    this.state = {date: date, today: date, selected: []};
+                    this.handleMonthScroll = this.handleMonthScroll.bind(this);
+                    this.handleDaySelect = this.handleDaySelect.bind(this);
+                }
+
+                days = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"];
+
+                months = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+
+                handleMonthScroll(month, year) {
+                    let today = new Date();
+                    this.setState({date: today.getMonth() == month && today.getFullYear() == year ? today : new Date(year, month), today: today});
+                }
+
+                handleDaySelect(selectedDay) {
+                    this.setState(prevState => {
+                        let selected = prevState.selected;
+                        let index = -1;
+                        for(let i = 0; i < selected.length; i++) {
+                            let day = selected[i];
+                                if(selectedDay.getFullYear() == day.getFullYear() && selectedDay.getMonth() == day.getMonth() && selectedDay.getDate() == day.getDate()) {
+                                    index = i;
+                                break;
+                            }
+                        }
+                        let selectedDate = prevState.selectedDate;
+                        if(selectedDate) {
+                            if(index > -1) {
+                                if(selectedDay.getFullYear() == selectedDate.getFullYear() && selectedDay.getMonth() == selectedDate.getMonth()
+                                    && selectedDay.getDate() == selectedDate.getDate()) {
+                                    selected.splice(index, 1);
+                                    selectedDate = null;
+                                }
+                                else
+                                    selectedDate = selectedDay;
+                            }
+                            else {
+                                selected.push(selectedDay)
+                                selectedDate = null;
+                            }
+                        } else
+                            index > -1 ? selectedDate = selectedDay : selected.push(selectedDay);
+                        return {selected: selected, selectedDate: selectedDate};
+                    });
+                }
+
+                render() {
+                    return <>
+                        {React.createElement("div", {className: "calendar-container"}, <div className={"calendar"}>
+                                <CalendarHead days={this.days} months={this.months} date={this.state.date} onMonthScroll={this.handleMonthScroll}/>
+                                <CalendarBody date={this.state.date} today={this.state.today} selected={this.state.selected} onDaySelect={this.handleDaySelect}/>
+                            </div>)}
+                        <WrappedComponent date={this.state.selectedDate} {...this.props}/>
+                    </>;
+                }
+            }
+        }
+
+        const Scheduler = linkToCalendar(Notes);
+
+        ReactDOM.render(<Scheduler render={(notes, onNoteEdit, editing, onEditChange, onEditSave) =>
+            <NotesViewer notes={notes} onNoteEdit={onNoteEdit} editing={editing} onEditChange={onEditChange} onEditSave={onEditSave}/>}/>,
+                document.getElementById("scheduler"));
+
+    </script>
+</body>
+</html>

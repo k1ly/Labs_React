@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 15</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/redux@4.0.0/dist/redux.js" crossorigin></script>
+    <script src="https://unpkg.com/react-redux@5.0.7/dist/react-redux.js" crossorigin></script>
+    <script src="https://unpkg.com/react-router-dom@4.2.2/umd/react-router-dom.js" crossorigin></script>
+    <script src="./redux/shop.js" crossorigin></script>
+    <script type="text/babel" src="./components/catalog.js" crossorigin></script>
+    <script type="text/babel" src="./components/auth.js" crossorigin></script>
+    <script type="text/babel" src="./components/cart.js" crossorigin></script>
+    <style>
+        .sort-table, .sort-table td, .sort-table th {
+            padding: 5px;
+            border: 1px solid black;
+        }
+        .sort-table th {
+            background-color: gray;
+            color: white;
+        }
+        .sort-table th.attribute {
+            cursor: pointer;
+        }
+        .sort-table .few {
+            background-color: yellow;
+        }
+        .sort-table .none {
+            background-color: red;
+        }
+        .catalog-header {
+            list-style: none;
+            display: inline-flex;
+            justify-content: space-around;
+            margin: 0;
+            padding: 0;
+            width: 50%;
+            float: right;
+        }
+        .catalog-header li {
+            padding: 10px;
+            box-shadow: 0px 0px 10px 3px rgb(0 0 0 / 88%);
+            background-color: aliceblue;
+            color: rgb(10, 73, 190);
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .modal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(128, 128, 128, 0.5);
+        }
+        .nav-bar {
+            display: inline-flex;
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 50px;
+            background-color: rgb(187, 250, 224);
+        }
+        .nav-bar li {
+            padding: 11px 0;
+        }
+        .nav-bar a {
+            padding: 15px;
+            background-color: rgb(58, 58, 58);
+            color: white;
+        }
+        .nav-bar a:hover {
+            background-color: rgb(84, 238, 192);
+            color: rgb(25, 25, 25);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <div id="modal"></div>
+
+    <script type="text/babel">
+        
+        const catalogStateProps = (state) => {
+            return {
+                products: state.products,
+                cart: state.cart
+            };
+        }
+
+        const catalogDispatchProps = (dispatch) => {
+            return {
+                onProductAddClick: (product) => dispatch({type: "ADD_PRODUCT", product})
+            };
+        }
+
+        var curUser = null;
+
+        const authStateProps = (state) => {
+            return {
+                users: state.users,
+                setUser: (user) => curUser = user 
+            };
+        }
+
+        const authDispatchProps = (dispatch) => {
+            return {
+                onSignUp: (user) => dispatch({type: "SIGN_UP", user})
+            };
+        }
+
+        const cartStateProps = (state) => {
+            return {
+                cart: state.cart,
+                progress: state.progress,
+                delivery: state.delivery,
+                address: state.address,
+                payment: state.payment
+            };
+        }
+
+        const cartDispatchProps = (dispatch) => {
+            return {
+                onNextStep: () => dispatch({type: "NEXT_STEP"}),
+                onPrevStep: () => dispatch({type: "PREV_STEP"}),
+                onDisableCheck: (product, isDisabled) => dispatch({type: "SET_DISABLE", product, isDisabled}),
+                onQuantityChange: (product, quantity) => dispatch({type: "SET_QUANTITY", product, quantity}),
+                onRemoveClick: (product) => dispatch({type: "REMOVE_ITEM", product}),
+                onDeliveryChange: (delivery) => dispatch({type: "SET_DELIVERY", delivery}),
+                onAddressChange: (address) => dispatch({type: "SET_ADDRESS", address}),
+                onPaymentChange: (payment) => dispatch({type: "SET_PAYMENT", payment})
+            };
+        }
+
+        const ShopCatalog = ReactRedux.connect(catalogStateProps, catalogDispatchProps)(Search);
+        const ShopAuth = ReactRedux.connect(authStateProps, authDispatchProps)(AuthForm);
+        const ShopCart = ReactRedux.connect(cartStateProps, cartDispatchProps)(OrderForm);
+
+        function Main(props) {
+            return <main>
+                <ReactRouterDOM.Switch>
+                    <ReactRouterDOM.Route exact path="/catalog" render={() =>
+                        <ReactRedux.Provider store={shopStorage}><ShopCatalog/></ReactRedux.Provider>}/>
+                    <ReactRouterDOM.Route path="/auth" render={() =>
+                        <ReactRedux.Provider store={shopStorage}><ShopAuth/></ReactRedux.Provider>}/>
+                    <ReactRouterDOM.Route path="/cart" render={() =>
+                        <ReactRedux.Provider store={shopStorage}><ShopCart/></ReactRedux.Provider>}/>
+                </ReactRouterDOM.Switch>
+            </main>;
+        }
+
+        class NavBar extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {cart: shopStorage.getState().cart};
+                this.onShopStorageChange = this.onShopStorageChange.bind(this);
+                shopStorage.subscribe(this.onShopStorageChange);
+                this.onSignOut = this.onSignOut.bind(this);
+            }
+
+            onShopStorageChange(e) {
+                this.setState({cart: shopStorage.getState().cart});
+            }
+
+            onSignOut(e) {
+                e.preventDefault();
+                curUser = null;
+                this.forceUpdate();
+                shopStorage.dispatch({type: "CLEAR"});
+            }
+
+            render() {
+                return <nav>
+                    <ul className="nav-bar">
+                        <li><ReactRouterDOM.Link to="/catalog">Каталог</ReactRouterDOM.Link></li>
+                        {!curUser ? <li><ReactRouterDOM.Link to="/auth">Авторизация</ReactRouterDOM.Link></li> : null}
+                        <li><ReactRouterDOM.Link to="/cart">Корзина {this.state.cart.reduce((sum, item) => sum + item.quantity, 0)}</ReactRouterDOM.Link></li>
+                        {curUser ? <li><a style={{color: "white", cursor: "pointer"}} onClick={this.onSignOut}>Выйти</a></li> : null}
+                    </ul>
+                </nav>;
+            }
+        }
+
+        const App = () => (
+            <div>
+                <NavBar/>
+                <Main/>
+            </div>
+        );
+
+        ReactDOM.render(<ReactRouterDOM.BrowserRouter basename="/webdesign"><App/></ReactRouterDOM.BrowserRouter>, document.getElementById("root"));
+
+    </script>
+</body>
+</html>

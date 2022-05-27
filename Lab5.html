@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 5</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        div {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="sign-up"></div>
+
+    <script type="text/babel">
+
+        class SignUpForm extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {email: "", password: "", repeat: ""};
+                this.handleEmailChange = this.handleEmailChange.bind(this);
+                this.handlePasswordChange = this.handlePasswordChange.bind(this);
+                this.handlePasswordRepeat = this.handlePasswordRepeat.bind(this);
+            }
+
+            emailPattern = "^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,6}$";
+            passwordPattern = "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$";
+
+            handleEmailChange(e) {
+                this.setState({email: e.target.value})
+            }
+
+            handlePasswordChange(e) {
+                this.setState({password: e.target.value})
+            }
+
+            handlePasswordRepeat(e) {
+                this.setState({repeat: e.target.value})
+            }
+
+            render() {
+                let isPasswordRepeated = this.state.password === this.state.repeat;
+                let isSubmitEnabled = this.state.email.match(this.emailPattern) && this.state.password.match(this.passwordPattern) && isPasswordRepeated;
+                return React.createElement("form", {}, <>
+                    <SignUpEmailInput onEmailChange={this.handleEmailChange}/>
+                    <SignUpPasswordInput password={this.state.password} isRepeated={isPasswordRepeated}
+                        onPasswordChange={this.handlePasswordChange} onPasswordRepeat={this.handlePasswordRepeat}/>
+                    <SignUpName/>
+                    <SignUpGender/>
+                    <SignUpBirthDate/>
+                    <PhoneInput/>
+                    <div><input disabled={!isSubmitEnabled} type="submit" value="Отправить"/></div></>);
+            }
+        }
+
+        function SignUpEmailInput(props) {
+            return <div><label>Email<br/><input type="email" onChange={(e) => props.onEmailChange(e)}/></label></div>;
+        }
+
+        function SignUpPasswordInput(props) {
+            return <><div><label>Пароль<br/><input type="password" onChange={(e) => props.onPasswordChange(e)}/></label><br/>
+                <ProgressBar password={props.password}/></div>
+                {props.isRepeated ? null : <div style={{color: "red"}}>Пароль не сопадает</div>}
+                <div><label>Подтверждение пароля<br/><input type="password" onChange={(e) => props.onPasswordRepeat(e)}/></label></div></>;
+        }
+
+        function ProgressBar(props) {
+            let progress = 0;
+            if(props.password.match("(?=.*\\d)"))
+                progress++;
+            if(props.password.match("(?=.*[a-z])"))
+                progress++;
+            if(props.password.match("(?=.*[A-Z])"))
+                progress++;
+            if(props.password.match(".{8,}"))
+                progress++;
+            return <progress value={progress} max="4"></progress>;
+        }
+
+        function SignUpName() {
+            return <div><label>ФИО<br/><input type="text"/></label></div>;
+        }
+
+        function SignUpGender() {
+            return <div>Пол<br/><label><input type="radio" name="gender"/> мужской</label><br/>
+                        <label><input type="radio" name="gender"/> женский</label></div>;
+        }
+
+        function SignUpBirthDate() {
+            let date = new Date();
+            let days = Array.from(new Array(31), (x, i) => i + 1);
+            let months = Array.from(new Array(12), (x, i) => i + 1);
+            let years = Array.from(new Array(date.getFullYear() + 1 - 1970), (x, i) => i + 1970);
+            return <div>Дата рождения<br/>
+                        <label style={{padding: "0 5px"}}><select>{days.map(day => <option value={day}>{day}</option>)}</select> Число</label>
+                        <label style={{padding: "0 5px"}}><select>{months.map(month => <option value={month}>{month}</option>)}</select> Месяц</label>
+                        <label style={{padding: "0 5px"}}><select>{years.map(year => <option value={year}>{year}</option>)}</select> Год</label>
+                    </div>;
+        }
+
+        class PhoneInput extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {selectedCountry: {}};
+                this.handleInput = this.handleInput.bind(this);
+                this.handleSelect = this.handleSelect.bind(this);
+            }
+
+            countryArray = [ {},
+                {name: "Беларусь", code: "+375", pattern: "+375 \d\d \d\d\d-\d\d-\d\d"},
+                {name: "Украина", code: "+380", pattern: "+380 \d\d \d\d\d-\d\d-\d\d"},
+                {name: "Литва", code: "+370", pattern: "+370 \d\d \d\d\d-\d\d-\d\d"}
+            ]
+
+            handleInput(e) {
+                let country = this.countryArray.filter(country => e.target.value.startsWith(country.code));
+                if(country.length > 0 && this.state.phone.length < e.target.value.length) {
+                    e.target.value = e.target.value.substring(0, country[0].pattern.length);
+                    for(let i = country[0].code.length; i < country[0].pattern.length; i++) {
+                        if(country[0].pattern[i] != "\d" && e.target.value[i] != country[0].pattern[i]) {
+                            e.target.value = e.target.value.substring(0, i) + country[0].pattern[i] + e.target.value.substring(i);
+                        }
+                        else if(country[0].pattern[i] == "\d" && !e.target.value[i].match(/\d/)) {
+                            e.target.value = e.target.value.substring(0, i);
+                            break;
+                        }
+                        if(i == e.target.value.length - 1)
+                            break;
+                    }
+                }
+                this.setState({selectedCountry: (country.length > 0 ? country[0] : this.countryArray[0]), phone: e.target.value});
+            }
+            
+            handleSelect(e) {
+                let country = this.countryArray.filter(country => e.target.value == country.code);
+                this.setState({selectedCountry: country.length > 0 ? country[0] : this.countryArray[0], phone: e.target.value});
+            }
+
+            render() {
+                return <div><label>Телефон<br/><input type="text" value={this.state.phone} onChange={(e) => this.handleInput(e)}/></label><br/>
+                <select onChange={(e) => this.handleSelect(e)}>{this.countryArray.map(country =>
+                    <option value={country.code} selected={country.code == this.state.selectedCountry.code}>
+                    {country.name ? (country.name + " (" + country.code + ")") : null}</option>)}</select></div>;
+            }
+        }
+
+        ReactDOM.render(<SignUpForm/>, document.getElementById("sign-up"));
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 10</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <!-- <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script> -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/prop-types@15.6/prop-types.js"></script>
+    <style>
+        .catalog-header {
+            list-style: none;
+            display: inline-flex;
+            justify-content: space-around;
+            margin: 0;
+            padding: 0;
+            width: 50%;
+            float: right;
+        }
+        .catalog-header li {
+            padding: 10px;
+            box-shadow: 0px 0px 10px 3px rgb(0 0 0 / 88%);
+            background-color: aliceblue;
+            color: rgb(10, 73, 190);;
+            font-weight: 500;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="sign-up"></div>
+    <div id="catalog"></div>
+
+    <script type="text/babel">
+
+        class SignUpForm extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {email: "", password: "", repeat: ""};
+                this.handleEmailChange = this.handleEmailChange.bind(this);
+                this.handlePasswordChange = this.handlePasswordChange.bind(this);
+                this.handlePasswordRepeat = this.handlePasswordRepeat.bind(this);
+            }
+
+            emailPattern = "^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,6}$";
+            passwordPattern = "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$";
+
+            handleEmailChange(e) {
+                this.setState({email: e.target.value})
+            }
+
+            handlePasswordChange(e) {
+                this.setState({password: e.target.value})
+            }
+
+            handlePasswordRepeat(e) {
+                this.setState({repeat: e.target.value})
+            }
+
+            render() {
+                let isSubmitEnabled = this.state.email && this.state.password ?
+                    (this.state.email.match(this.emailPattern) && this.state.password.match(this.passwordPattern) && this.state.password == this.state.repeat) : false;
+                return <div style={{display: "flex", justifyContent: "center", alignItems: "center", width: "100vw", height: "100vh", textAlign: "center"}}>
+                    <div style={{width: "30%"}}>{React.createElement("form", {}, <>
+                    <SignUpEmailInput email={this.state.email} onEmailChange={this.handleEmailChange}/>
+                    <SignUpPasswordInput password={this.state.password} repeat={this.state.repeat}
+                        onPasswordChange={this.handlePasswordChange} onPasswordRepeat={this.handlePasswordRepeat}/>
+                    <SignUpName/>
+                    <SignUpGender/>
+                    <SignUpBirthDate/>
+                    <PhoneInput/>
+                    <div><input style={{margin: "10px"}} disabled={!isSubmitEnabled} type="submit" value="Отправить"/></div></>)}</div></div>;
+            }
+        }
+
+        function SignUpEmailInput(props) {
+            return <div><label>Email<br/><input value={props.email} type="email" onChange={(e) => props.onEmailChange(e)}/></label></div>;
+        }
+        
+        SignUpEmailInput.propTypes = {
+            email: PropTypes.string,
+            onEmailChange: PropTypes.func
+        }
+
+        function SignUpPasswordInput(props) {
+            return <><div><label>Пароль<br/><input value={props.password} type="password" onChange={(e) => props.onPasswordChange(e)}/></label><br/>
+                <ProgressBar password={props.password}/></div>
+                {props.password === props.repeat ? null : <div style={{color: "red"}}>Пароль не сопадает</div>}
+                <div><label>Подтверждение пароля<br/><input value={props.repeat} type="password" onChange={(e) => props.onPasswordRepeat(e)}/></label></div></>;
+        }
+
+        SignUpPasswordInput.propTypes = {
+            password: PropTypes.number,
+            onPasswordChange: PropTypes.array,
+            repeat: PropTypes.string,
+            onPasswordRepeat: PropTypes.func
+        }
+
+        function ProgressBar(props) {
+            let progress = 0;
+            if(props.password) {
+                if(props.password.match("(?=.*\\d)"))
+                    progress++;
+                if(props.password.match("(?=.*[a-z])"))
+                    progress++;
+                if(props.password.match("(?=.*[A-Z])"))
+                    progress++;
+                if(props.password.match(".{8,}"))
+                    progress++;
+            }
+            return <progress value={progress} max="4"></progress>;
+        }
+
+        function SignUpName() {
+            return <div><label>ФИО<br/><input type="text"/></label></div>;
+        }
+
+        function SignUpGender() {
+            return <div>Пол<br/><label><input type="radio" name="gender"/> мужской</label><br/>
+                        <label><input type="radio" name="gender"/> женский</label></div>;
+        }
+
+        function SignUpBirthDate() {
+            let date = new Date();
+            let days = Array.from(new Array(31), (x, i) => i + 1);
+            let months = Array.from(new Array(12), (x, i) => i + 1);
+            let years = Array.from(new Array(date.getFullYear() + 1 - 1970), (x, i) => i + 1970);
+            return <div>Дата рождения<br/>
+                        <label style={{padding: "0 5px"}}><select>{days.map(day => <option key={day} value={day}>{day}</option>)}</select> Число</label>
+                        <label style={{padding: "0 5px"}}><select>{months.map(month => <option key={month} value={month}>{month}</option>)}</select> Месяц</label>
+                        <label style={{padding: "0 5px"}}><select>{years.map(year => <option key={year} value={year}>{year}</option>)}</select> Год</label>
+                    </div>;
+        }
+
+        class PhoneInput extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {selectedCountry: this.countryArray[0], phone: ""};
+                this.handleInput = this.handleInput.bind(this);
+                this.handleSelect = this.handleSelect.bind(this);
+            }
+
+            countryArray = [ {code: ""},
+                {name: "Беларусь", code: "+375", pattern: "+375 \d\d \d\d\d-\d\d-\d\d"},
+                {name: "Украина", code: "+380", pattern: "+380 \d\d \d\d\d-\d\d-\d\d"},
+                {name: "Литва", code: "+370", pattern: "+370 \d\d \d\d\d-\d\d-\d\d"}
+            ]
+
+            handleInput(e) {
+                let country = this.countryArray.slice(1).filter(country => e.target.value.startsWith(country.code));
+                if(country.length > 0 && this.state.phone.length < e.target.value.length) {
+                    e.target.value = e.target.value.substring(0, country[0].pattern.length);
+                    for(let i = country[0].code.length; i < country[0].pattern.length; i++) {
+                        if(country[0].pattern[i] != "\d" && e.target.value[i] != country[0].pattern[i]) {
+                            e.target.value = e.target.value.substring(0, i) + country[0].pattern[i] + e.target.value.substring(i);
+                        }
+                        else if(country[0].pattern[i] == "\d" && !e.target.value[i].match(/\d/)) {
+                            e.target.value = e.target.value.substring(0, i);
+                            break;
+                        }
+                        if(i == e.target.value.length - 1)
+                            break;
+                    }
+                }
+                this.setState({selectedCountry: (country.length > 0 ? country[0] : this.countryArray[0]), phone: e.target.value});
+            }
+            
+            handleSelect(e) {
+                let country = this.countryArray.filter(country => e.target.value == country.code);
+                this.setState({selectedCountry: country.length > 0 ? country[0] : this.countryArray[0], phone: e.target.value});
+            }
+
+            render() {
+                return <div><label>Телефон<br/><input type="text" value={this.state.phone} onChange={(e) => this.handleInput(e)}/></label><br/>
+                    <select value={this.state.selectedCountry.code} onChange={(e) => this.handleSelect(e)}>{this.countryArray.map(country =>
+                    <option key={country.code} value={country.code}>{country.name ? (country.name + " (" + country.code + ")") : null}</option>)}</select>
+                    </div>;
+            }
+        }
+
+        ReactDOM.render(<SignUpForm/>, document.getElementById("sign-up"));
+
+        const productArray = [
+                {name: "Butter", price: 3.40, quantity: 30,
+                    image: "https://freight.cargo.site/i/37cc760e6c63a6591e874bd90c14f5c22afc16b227817a37310aedd4b5a04507/free-png-butter-png-images-transparent-butter-png-850_559.png",
+                    description: "This is very good butter", isNew: false, discount: 50},
+                {name: "Fish", price: 12.80, quantity: 0,
+                    image: "https://media.istockphoto.com/photos/fresh-fish-picture-id486874340?k=20&m=486874340&s=612x612&w=0&h=k1yoT_NUehTP5GoN7dhGeceMCK5ZrGMaJ6L4Fd7ILAs=",
+                    description: "This is very good fish", isNew: true, discount: 10},
+                {name: "Water", price: 10.30, quantity: 11,
+                    image: "https://media.istockphoto.com/photos/bottle-of-spring-water-picture-id185072125?k=20&m=185072125&s=612x612&w=0&h=QM7Ejzdq_hGjtW6iI8i7Nkm1EW8VuITy4lzikfeaRVE=",
+                    description: "This is very good water", isNew: false, discount: 0},
+                {name: "Milk", price: 6.10, quantity: 25,
+                    image: "https://media.istockphoto.com/photos/milk-box-picture-id521855811?k=20&m=521855811&s=612x612&w=0&h=nfc2IF2_zpH5Ei1dAJLzBmyTOb9YAZ7G5tfrY2wB6uE=",
+                    description: "This is very good milk", isNew: false, discount: 0},
+                {name: "Cheese", price: 15.00, quantity: 14,
+                    image: "https://media.istockphoto.com/photos/piece-of-cheese-isolated-picture-id500454774?k=20&m=500454774&s=612x612&w=0&h=5Og4NA85MGLyk8QUTZaXwaXus7jdEWP_maTDMLSB9ok=",
+                    description: "This is very good cheese", isNew: true, discount: 15}, 
+                {name: "Sausage", price: 9.30, quantity: 71,
+                    image: "https://media.istockphoto.com/photos/cooked-sausage-piled-together-with-a-white-background-picture-id170222471?k=20&m=170222471&s=612x612&w=0&h=Gl8Ea7lRgElGIddLAyiPQWYGPQL9-HCed2NCXVZ_oNw=",
+                    description: "This is very good sausage", isNew: false, discount: 30},
+                {name: "Chocolate", price: 4.60, quantity: 2,   
+                    image: "https://media.baamboozle.com/uploads/images/74699/1618534876_48012_url.jpeg",
+                    description: "This is very good chocolate", isNew: true, discount: 0}
+            ]
+
+        class Catalog extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {};
+                this.handleSort = this.handleSort.bind(this);
+            }
+
+            handleSort(e) {
+                this.setState(prevState => ({attribute: e.target.dataset.name, asc: prevState.asc && prevState.attribute == e.target.dataset.name ? !prevState.asc : true}));
+            }
+
+            render() {
+                let asc = this.state.asc;
+                let comparator;
+                switch(this.state.attribute) {
+                    case "name": comparator = (a, b) => a.name == b.name ? 0 : (asc ? (a.name > b.name ? 1 : -1) : (a.name < b.name ? 1 : -1)); break;
+                    case "price": comparator = (a, b) => a.price == b.price ? 0 : (asc ? (a.price > b.price ? 1 : -1) : (a.price < b.price ? 1 : -1)); break;
+                    case "quantity": comparator = (a, b) => a.quantity == b.quantity ? 0 : (asc ? (a.quantity > b.quantity ? 1 : -1) : (a.quantity < b.quantity ? 1 : -1)); break;
+                    case "discount": comparator = (a, b) => a.discount == b.discount ? 0 : (asc ? (a.discount > b.discount ? 1 : -1) : (a.discount < b.discount ? 1 : -1)); break;
+                }
+                let products = this.props.array.sort(comparator).sort((a, b) => a.isNew && !b.isNew ? -1 : (!a.isNew && b.isNew ? 1 : 0));
+                let sort = asc != undefined ? (<svg style={{width: "10px", height: "10px"}}>
+                    <polygon points={asc ? "0,10 10,10 5,0" : "0,0 10,0 5,10"} style={{fill: "black"}}/></svg>) : null;
+                let header = <div style={{display: "flex", justifyContent: "flex-end", width: "100%"}}><ul className="catalog-header">
+                    <li data-name="name" style={this.state.attribute == "name" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={(e) => this.handleSort(e)}>Название {this.state.attribute == "name" ? sort : null}</li>
+                    <li data-name="price" style={this.state.attribute == "price" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={(e) => this.handleSort(e)}>Цена {this.state.attribute == "price" ? sort : null}</li>
+                    <li data-name="quantity" style={this.state.attribute == "quantity" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={(e) => this.handleSort(e)}>Кол-во {this.state.attribute == "quantity" ? sort : null}</li>
+                    <li data-name="discount" style={this.state.attribute == "discount" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={(e) => this.handleSort(e)}>Скидка {this.state.attribute == "discount" ? sort : null}</li>
+                </ul></div>;
+                const createRow = (value, index) => React.createElement("tr", {key: value.name,
+                    style: {height: "300px", border: index % 2 == 0 ? "solid rgb(236, 236, 236)" : null}}, <>
+                    <td style={{padding: "0 0 0 10%"}}><div style={{margin: "5px", width: "280px", height: "280px",
+                        backgroundImage: "url(" + value.image + ")", backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat"}}>
+                        <div style={{lineHeight: "30px"}}>
+                            {value.isNew ? <div style={{display: "inline-block", margin: "5px", width: "100px", backgroundColor: "#b4b4b4", color: "#242424", textAlign: "center"}}>
+                                Новинка</div> : null}
+                        {value.discount > 0 ? <div style={{display: "inline-block", margin: "5px", width: "100px", backgroundColor: "rgb(231, 50, 18)", color: "white", textAlign: "center"}}>
+                            {value.discount}%</div> : null}
+                        </div></div></td>
+                    <td style={{padding: "0 0 0 10%"}}><div style={{fontSize: "25px", fontWeight: "600"}}>{value.name}</div>
+                        <div>
+                            <div style={{display: "inline-block", fontSize: "20px", fontWeight: "500"}}>{Math.round((100 - value.discount) / 100 * value.price)} руб.</div>
+                            {value.discount > 0 ? <div style={{display: "inline-block", margin: "0 10px", color: "#bcbaba", fontSize: "15px", fontWeight: "500", textDecoration: "line-through"}}>
+                                {value.price} руб.</div> : null}
+                        </div>
+                        <div style={{fontWeight: "700"}}>Количество  {value.quantity} шт.</div>
+                        <div>{value.description}</div></td>
+                </>);
+                return <div style={{display: "flex", justifyContent: "center", padding: "20px"}}><div style={{width: "100%"}}>{header}
+                    <div style={{display: "flex", justifyContent: "center", padding: "20px"}}>
+                        {React.createElement("table", {width: "60%"}, <tbody>{products.map(createRow)}</tbody>)}
+                    </div></div></div>;
+            }
+        }
+
+        class Search extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {searchPattern: "", searchResult: this.props.array};
+                this.handleSearchChange = this.handleSearchChange.bind(this);
+            }
+
+            handleSearchChange(e) {
+                this.setState({searchPattern: e.target.value, searchResult: this.props.array.filter(value => value.name.match(e.target.value))});
+            }
+
+            render() {
+                return <><div style={{display: "flex", justifyContent: "center", margin: "10px"}}>
+                    <input value={this.state.searchPattern} type="text" onChange={this.handleSearchChange}/></div><br/>
+                    <Catalog array={this.state.searchResult}/></>;
+            }
+        }
+
+        ReactDOM.render(<Search array={productArray}/>, document.getElementById("catalog"));
+    
+    </script>
+</body>
+</html>

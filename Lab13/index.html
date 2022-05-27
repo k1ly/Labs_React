@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 13</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/redux@4.0.0/dist/redux.js" crossorigin></script>
+    <script src="https://unpkg.com/react-redux@5.0.7/dist/react-redux.js" crossorigin></script>
+    <script src="./redux/cart.js"></script>
+    <style>
+        .catalog-header {
+            list-style: none;
+            display: inline-flex;
+            justify-content: space-around;
+            margin: 0;
+            padding: 0;
+            width: 50%;
+            float: right;
+        }
+        .catalog-header li {
+            padding: 10px;
+            box-shadow: 0px 0px 10px 3px rgb(0 0 0 / 88%);
+            background-color: aliceblue;
+            color: rgb(10, 73, 190);
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .modal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(128, 128, 128, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="catalog"></div>
+    <div id="modal"></div>
+    <div id="order-form"></div>
+
+    <script type="text/babel">
+
+        class Catalog extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {isModalShown: false, product: {}};
+                this.handleSort = this.handleSort.bind(this);
+                this.handleCartAddClick = this.handleCartAddClick.bind(this);
+                this.handleCheckout = this.handleCheckout.bind(this);
+                this.handleModalClose = this.handleModalClose.bind(this);
+            }
+
+            handleSort(e) {
+                this.setState(prevState => ({attribute: e.target.dataset.name, asc: prevState.asc && prevState.attribute == e.target.dataset.name ? !prevState.asc : true}));
+            }
+
+            handleCartAddClick(e) {
+                let product = this.props.array.filter(product => product.name == e.target.value)[0];
+                cartStorage.dispatch({type: "ADD_PRODUCT", product});
+                let storageState = cartStorage.getState();
+                let totalQuantity = 0;
+                let totalPrice = 0;
+                storageState.items.map(item => {totalQuantity += item.quantity;
+                    totalPrice += item.quantity * Math.round((100 - item.product.discount) / 100 * item.product.price)});
+                this.setState({isModalShown: true, product: product ? product : {}, totalQuantity: totalQuantity, totalPrice: totalPrice});
+            }
+
+            handleCheckout(e) {
+                window.sessionStorage.setItem("cart", JSON.stringify(cartStorage.getState()));
+                window.location.href = "./order.html";
+            }
+
+            handleModalClose(e) {
+                this.setState({isModalShown: false, product: {}});
+            }
+
+            render() {
+                let asc = this.state.asc;
+                let comparator;
+                switch(this.state.attribute) {
+                    case "name": comparator = (a, b) => a.name == b.name ? 0 : (asc ? (a.name > b.name ? 1 : -1) : (a.name < b.name ? 1 : -1)); break;
+                    case "price": comparator = (a, b) => a.price == b.price ? 0 : (asc ? (a.price > b.price ? 1 : -1) : (a.price < b.price ? 1 : -1)); break;
+                    case "quantity": comparator = (a, b) => a.quantity == b.quantity ? 0 : (asc ? (a.quantity > b.quantity ? 1 : -1) : (a.quantity < b.quantity ? 1 : -1)); break;
+                    case "discount": comparator = (a, b) => a.discount == b.discount ? 0 : (asc ? (a.discount > b.discount ? 1 : -1) : (a.discount < b.discount ? 1 : -1)); break;
+                }
+                let products = this.props.array.sort(comparator).sort((a, b) => a.isNew && !b.isNew ? -1 : (!a.isNew && b.isNew ? 1 : 0));
+                let sort = asc != undefined ? (<svg style={{width: "10px", height: "10px"}}>
+                    <polygon points={asc ? "0,10 10,10 5,0" : "0,0 10,0 5,10"} style={{fill: "black"}}/></svg>) : null;
+                let header = <div style={{display: "flex", justifyContent: "flex-end", width: "100%"}}><ul className="catalog-header">
+                    <li data-name="name" style={this.state.attribute == "name" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={this.handleSort}>Название {this.state.attribute == "name" ? sort : null}</li>
+                    <li data-name="price" style={this.state.attribute == "price" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={this.handleSort}>Цена {this.state.attribute == "price" ? sort : null}</li>
+                    <li data-name="quantity" style={this.state.attribute == "quantity" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={this.handleSort}>Кол-во {this.state.attribute == "quantity" ? sort : null}</li>
+                    <li data-name="discount" style={this.state.attribute == "discount" ? {backgroundColor: "rgb(10, 133, 190)", color: "white"} : null}
+                        onClick={this.handleSort}>Скидка {this.state.attribute == "discount" ? sort : null}</li>
+                </ul></div>;
+                const createRow = (value, index) => React.createElement("tr", {key: value.name,
+                    style: {height: "300px", border: index % 2 == 0 ? "solid rgb(236, 236, 236)" : null}}, <>
+                    <td style={{padding: "0 0 0 10%"}}><div style={{margin: "5px", width: "280px", height: "280px",
+                        backgroundImage: "url(" + value.image + ")", backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat"}}>
+                        <div style={{lineHeight: "30px"}}>
+                            {value.isNew ? <div style={{display: "inline-block", margin: "5px", width: "100px", backgroundColor: "#b4b4b4", color: "#242424", textAlign: "center"}}>
+                                Новинка</div> : null}
+                        {value.discount > 0 ? <div style={{display: "inline-block", margin: "5px", width: "100px", backgroundColor: "rgb(231, 50, 18)", color: "white", textAlign: "center"}}>
+                            {value.discount}%</div> : null}
+                        </div></div></td>
+                    <td style={{padding: "0 0 0 10%"}}><div style={{fontSize: "25px", fontWeight: "600"}}>{value.name}</div>
+                        <div>
+                            <div style={{display: "inline-block", fontSize: "20px", fontWeight: "500"}}>{Math.round((100 - value.discount) / 100 * value.price)} руб.</div>
+                            {value.discount > 0 ? <div style={{display: "inline-block", margin: "0 10px", color: "#bcbaba", fontSize: "15px", fontWeight: "500", textDecoration: "line-through"}}>
+                                {value.price} руб.</div> : null}
+                        </div>
+                        <div style={{fontWeight: "700"}}>Количество {value.quantity} шт.</div>
+                        <div>{value.description}</div>
+                        <button style={{margin: "100px 0 0 0", borderRadius: "100px", backgroundColor: "green", color: "white"}}
+                            value={value.name} onClick={this.handleCartAddClick}>Добавить в корзину</button></td>
+                </>);
+                return <div style={{display: "flex", justifyContent: "center", padding: "20px"}}><div style={{width: "100%"}}>{header}
+                    <div style={{display: "flex", justifyContent: "center", padding: "20px"}}>
+                        {React.createElement("table", {width: "60%"}, <tbody>{products.map(createRow)}</tbody>)}
+                    </div></div>
+                    {this.state.isModalShown ? <Modal onModalClose={this.handleModalClose}>
+                        <div style={{fontSize: "x-large"}}>Товар был успешно добавлен в корзину!</div>
+                        <table style={{margin: "10px 30px", width: "calc(100% - 60px)", fontSize: "large"}}>
+                            <tbody>
+                            <tr><td style={{textAlign: "left"}}>Название</td><td style={{textAlign: "right"}}>{this.state.product.name}</td></tr>
+                            <tr><td style={{textAlign: "left"}}>Стоимость</td><td style={{textAlign: "right"}}>
+                                {Math.round((100 - this.state.product.discount) / 100 * this.state.product.price)} руб.</td></tr>
+                            <tr><td style={{textAlign: "left"}}>Кол-во товаров в корзине</td><td style={{textAlign: "right"}}>{this.state.totalQuantity}</td></tr>
+                            <tr><td style={{textAlign: "left"}}>Суммарная стоимость</td><td style={{textAlign: "right"}}>{this.state.totalPrice} руб.</td></tr>
+                            </tbody>
+                        </table>
+                        <div style={{display: "flex", justifyContent: "space-around"}}>
+                            <button style={{backgroundColor: "rgba(113, 177, 232, 0.5)", color: "white"}}
+                                onClick={this.handleCheckout}>Перейти к оформлению заказа</button>
+                            <button style={{backgroundColor: "rgb(53, 115, 222)", color: "white"}}
+                                onClick={this.handleModalClose}>Продолжить просмотр товаров</button></div>
+                        </Modal> : null} 
+                    </div>;
+            }
+        }
+
+        class Modal extends React.Component{
+            constructor(props) {
+                super(props);
+                this.handleModalClick = this.handleModalClick.bind(this);
+            }
+
+            handleModalClick(e) {
+                if(e.target.className == "modal") {
+                    this.props.onModalClose(e);
+                }
+            }
+
+            render() {
+                return ReactDOM.createPortal(<div className="modal" onClick={this.handleModalClick}>
+                    <div style={{position: "relative", minWidth: "600px", minHeight: "30%",
+                        border: "3px solid gray", borderRadius: "20px", backgroundColor: "white", textAlign: "center"}}>
+                    <div style={{margin: "15px"}}>{this.props.children}</div>
+                    <div style={{position: "absolute", top: "10px", right: "10px", cursor: "pointer"}} onClick={this.props.onModalClose}>❌</div>
+                </div></div>, document.getElementById("modal"));
+            }
+        }
+
+        ReactDOM.render(<Catalog array={productArray}/>, document.getElementById("catalog"));
+
+    </script>
+</body>
+</html>

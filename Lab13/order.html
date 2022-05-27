@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 13</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/redux@4.0.0/dist/redux.js" crossorigin></script>
+    <script src="https://unpkg.com/react-redux@5.0.7/dist/react-redux.js" crossorigin></script>
+    <script src="./redux/order.js"></script>
+    <style>
+
+    </style>
+</head>
+<body>
+    <div id="order-form"></div>
+
+    <script type="text/babel">
+
+        class OrderForm extends React.Component {
+            constructor(props) {
+                super(props);
+                this.lang = new Map();
+                this.lang.set("COURIER", "Курьером");
+                this.lang.set("MAIL", "По почте");
+                this.lang.set("PICKUP", "Самовывоз");
+                this.lang.set("CASH", "Наличные");
+                this.lang.set("CARD", "Банковская карта");
+                this.lang.set("TRANSFER", "Банковский перевод");
+                this.state = {isListHidden: true};
+                this.handleExpandClick = this.handleExpandClick.bind(this);
+            }
+
+            handleExpandClick() {
+                this.setState(prevState => ({isListHidden: !prevState.isListHidden}));
+            }
+
+            render() {
+                let page;
+                switch(this.props.progress) {
+                    case 0: page = <>
+                        <div style={{width: "100%", height: "calc(100% - 50px)"}}>
+                        <div style={{display: "flex", justifyContent: "center", alignItems: "center", height: "50px"}}><progress value={this.props.progress} max="3"/></div>
+                            {this.props.cart.map((item, index) => <div key={index} style={{display: "flex", justifyContent: "space-around"}}>
+                                <label><input type="checkbox" checked={!item.isDisabled}
+                                    onChange={(e) => this.props.onDisableCheck(item.product, !e.target.checked)}/></label>
+                                <span>{item.product.name}</span>
+                                <label><input type="text" value={item.quantity} pattern="\d+"
+                                    onChange={(e) => this.props.onQuantityChange(item.product, e.target.value)}/></label>
+                                <button onClick={(e) => this.props.onRemoveClick(item.product)}>Удалить</button>
+                            </div>)}
+                        </div>
+                        <div>
+                            <button style={{float: "right", margin: "0 120px 0 0", backgroundColor: "gray", color: "white"}}
+                                onClick={this.props.onNextStep}>Вперед</button></div>
+                        </>;
+                        break;
+                    case 1: page = <>
+                        <div style={{width: "100%", height: "calc(100% - 50px)"}}>
+                        <div style={{display: "flex", justifyContent: "center", alignItems: "center", height: "50px"}}><progress value={this.props.progress} max="3"/></div>
+                            <div>
+                                Способ доставки<br/>
+                                <label><input type="radio" name="delivery" value="COURIER" checked={this.props.delivery == "COURIER"}
+                                    onChange={(e) => this.props.onDeliveryChange(e.target.value)}/>{this.lang.get("COURIER")}</label><br/>
+                                <label><input type="radio" name="delivery" value="MAIL" checked={this.props.delivery == "MAIL"}
+                                    onChange={(e) => this.props.onDeliveryChange(e.target.value)}/>{this.lang.get("MAIL")}</label><br/>
+                                <label><input type="radio" name="delivery" value="PICKUP" checked={this.props.delivery == "PICKUP"}
+                                    onChange={(e) => this.props.onDeliveryChange(e.target.value)}/>{this.lang.get("PICKUP")}</label>
+                            </div>
+                            <div>
+                                <label>Адрес доставки<br/>
+                                    <input type="text" value={this.props.address} disabled={this.props.delivery == "PICKUP"}
+                                        onChange={(e) => this.props.onAddressChange(e.target.value)}/>
+                                </label>
+                            </div>
+                            <div>
+                                Способ оплаты<br/>
+                                <label><input type="radio" name="payment" value="CASH" checked={this.props.payment == "CASH"}
+                                    onChange={(e) => this.props.onPaymentChange(e.target.value)}/>{this.lang.get("CASH")}</label><br/>
+                                <label><input type="radio" name="payment" value="CARD" checked={this.props.payment == "CARD"}
+                                    onChange={(e) => this.props.onPaymentChange(e.target.value)}/>{this.lang.get("CARD")}</label><br/>
+                                <label><input type="radio" name="payment" value="TRANSFER" checked={this.props.payment == "TRANSFER"}
+                                    onChange={(e) => this.props.onPaymentChange(e.target.value)}/>{this.lang.get("TRANSFER")}</label>
+                            </div>
+                        </div>
+                        <div>
+                            <button style={{float: "left", margin: "0 0 0 120px", backgroundColor: "gray", color: "white"}}
+                                onClick={this.props.onPrevStep}>Назад</button>
+                            <button style={{float: "right", margin: "0 120px 0 0", backgroundColor: "gray", color: "white"}}
+                                onClick={this.props.onNextStep}>Вперед</button></div>
+                        </>;
+                        break;
+                    case 2: {
+                    let price = this.props.cart.reduce((sum, item) => sum + item.quantity * Math.round((100 - item.product.discount) / 100 * item.product.price), 0);
+                    let delivery = this.props.delivery && this.props.delivery != "PICKUP" ?
+                        (this.props.delivery == "COURIER" ? (price < 200 ? 10 : 0)
+                            : this.props.cart.reduce((sum, item) => sum + Math.ceil(item.quantity * item.product.weight / 1000) * 5, 0)) : 0;
+                    page = <>
+                        <div style={{width: "100%", height: "calc(100% - 50px)"}}>
+                        <div style={{display: "flex", justifyContent: "center", alignItems: "center", height: "50px"}}><progress value={this.props.progress} max="3"/></div>
+                            <div style={{width: "100%", height: "40px", backgroundColor: "gray", color: "white", textAlign: "center"}}
+                                onClick={this.handleExpandClick}>{this.state.isListHidden ? "Показать список товаров" : "Свернуть"}</div>
+                            {!this.state.isListHidden ? <div style={{display: "flex", justifyContent: "center", width: "100%"}}>
+                                {this.props.cart.map((item, index) => <div key={index}>
+                                {item.product.name} {item.quantity}
+                            </div>)}</div> : null}
+                            <div>{price}руб. + {delivery}руб. (Доставка)</div>
+                            <div>Итого: {price + delivery}руб.</div>
+                            <div>Способ доставки: {this.lang.get(this.props.delivery)}</div>
+                            <div>Способ оплаты: {this.lang.get(this.props.payment)}</div>
+                            {this.props.address ? <div>Адрес: {this.props.address}</div> : null}
+                        </div>
+                        <div>
+                            <button style={{float: "left", margin: "0 0 0 120px", backgroundColor: "gray", color: "white"}}
+                                onClick={this.props.onPrevStep}>Назад</button>
+                            <button style={{float: "right", margin: "0 100px 0 0", backgroundColor: "gray", color: "white"}}>Подтвердить</button></div>
+                        </>;
+                        break;
+                    }
+                }
+                return <div style={{display: "flex", justifyContent: "center", alignItems: "center", height: "100vh"}}>
+                        <div style={{ width: "40vw", height: "60%", border: "2px outset gray", borderRadius: "10px"}}>
+                            {page}
+                        </div>
+                    </div>;
+            }
+        }
+
+        const mapStateToProps = (state) => {
+            return {
+                cart: state.cart,
+                progress: state.progress,
+                delivery: state.delivery,
+                address: state.address,
+                payment: state.payment
+            };
+        }
+
+        const mapDispatchToProps = (dispatch) => {
+            return {
+                onNextStep: () => dispatch({type: "NEXT_STEP"}),
+                onPrevStep: () => dispatch({type: "PREV_STEP"}),
+                onDisableCheck: (product, isDisabled) => dispatch({type: "SET_DISABLE", product, isDisabled}),
+                onQuantityChange: (product, quantity) => dispatch({type: "SET_QUANTITY", product, quantity}),
+                onRemoveClick: (product) => dispatch({type: "REMOVE_ITEM", product}),
+                onDeliveryChange: (delivery) => dispatch({type: "SET_DELIVERY", delivery}),
+                onAddressChange: (address) => dispatch({type: "SET_ADDRESS", address}),
+                onPaymentChange: (payment) => dispatch({type: "SET_PAYMENT", payment})
+            };
+        }
+
+        const DynamicOrderForm = ReactRedux.connect(mapStateToProps, mapDispatchToProps)(OrderForm);
+
+        ReactDOM.render(<ReactRedux.Provider store={orderStorage}><DynamicOrderForm/></ReactRedux.Provider>, document.getElementById("order-form"));
+
+    </script>
+</body>
+</html>

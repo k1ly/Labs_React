@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 11</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <!-- <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script> -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .icon {
+            width: 30px;
+            height: 30px;
+            display: inline !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="hierarchy"></div>
+
+    <script type="text/babel">
+
+        const hierarchy = [{
+            id: 1,
+            name: "folder1",
+            icon: "img/folder.svg",
+            childs: [{
+                id: 2,
+                name: "folder2",
+                icon: "img/folder.svg",
+                onClick: function(id) {
+                    console.log(id);
+                },
+                childs: [{
+                    id: 6,
+                    name: "image.png",
+                    icon: "img/image.svg",
+                    onClick: function(id) {
+                        console.log(id);
+                    }
+                }]
+            }]
+        }, {
+            id: 3,
+            name: "folder3",
+            icon: "img/folder.svg",
+            childs: [{
+                id: 4,
+                name: "folder4",
+                icon: "img/folder.svg",
+                childs: [{
+                    id: 5,
+                    name: "text.txt",
+                    icon: "img/text.svg",
+                    onClick: function(id) {
+                        console.log(id);
+                    }
+                }]
+            }]
+        }];
+
+        class Hierarchy extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {dirs: this.props.tree ? this.props.tree.filter(node => node.childs).map(node => this.createDirTree(node)) : null};
+                this.createTree = this.createDirTree.bind(this);
+                this.findTreeDir = this.findTreeDir.bind(this);
+                this.handleDirClick = this.handleDirClick.bind(this);
+            }
+
+            static getDerivedStateFromError(error) {
+                return {hasError: true};
+            }
+
+            componentDidCatch(error, info) {
+                console.log(info);
+            }
+
+            createDirTree(node) {
+                let dir = {id: node.id, isOpened: false, childs: []};
+                if(node.childs)
+                    node.childs.map(child => dir.childs.push(this.createDirTree(child)));
+                return dir;
+            }
+
+            findTreeDir(dirArray, predicate) {
+                if(dirArray) {
+                    let dir = dirArray.filter(predicate)[0];
+                    for(let i = 0; i < dirArray.length && !dir; i++)
+                        dir = this.findTreeDir(dirArray[i].childs, predicate);
+                    if(dir) {
+                        if(this.findTreeDir(dir.childs, predicate))
+                            throw "Дублированный идентификатор узла!";
+                        else return dir;
+                    }
+                }
+                return null;
+            }
+            
+            handleDirClick(e) {
+                let dir = this.findTreeDir(this.state.dirs, dir => dir.id == e.target.closest("[data-id]").dataset.id);
+                dir.isOpened = !dir.isOpened;
+                this.forceUpdate();
+            }
+
+            render() {
+                if(this.state.hasError || this.state.error)
+                    return <div>Возникли ошибки!</div>;
+                else
+                    return this.props.tree ? <>{this.props.tree.map(node => <div key={node.id}>
+                    <div style={{margin: node.childs ? null : "0 0 0 30px", width: "fit-content", cursor: "pointer"}}
+                        data-id={node.id} onClick={(e) => {node.childs ? this.handleDirClick(e) : null;
+                            node.onClick ? node.onClick(e.target.closest("[data-id]").dataset.id) : null}}>
+                    {node.childs ? <img className="icon" style={{height: "20px",
+                        transform: this.findTreeDir(this.state.dirs, dir => dir.id == node.id).isOpened ? "rotate(90deg)" : null}} src="img/arrow.svg"/> : null}
+                    <img className="icon" src={node.icon}/>{node.name}</div>
+                    {!node.childs || this.findTreeDir(this.state.dirs, dir => dir.id == node.id).isOpened ?
+                        <div style={{margin: "0 30px"}}><Hierarchy tree={node.childs}/></div> : null}</div>)}</> : null;
+            }
+        }
+
+        ReactDOM.render(<div style={{display: "flex", margin: "5%", height: "80vh", border: "2px solid rgba(0, 132, 255, 0.7)"}}>
+                        <div style={{width: "30%", height: "100%"}}><Hierarchy tree={hierarchy}/></div>
+                        <div style={{width: "70%", height: "100%", backgroundColor: "rgb(235, 235, 235)"}}></div>
+                    </div>, document.getElementById("hierarchy"));
+    
+    </script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 8</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .modal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(39, 39, 39, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div id="comments"></div>
+    
+    <script type="text/babel">
+        var avatars = [ {},
+            {name: "avatar1", url: "https://ik.imagekit.io/ikmedia/backlit.jpg"}
+        ]
+        
+        class Comments extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {};
+                this.handleAvatarSelect = this.handleAvatarSelect.bind(this);
+                this.handleAddComment = this.handleAddComment.bind(this);
+            }
+
+            comments = []
+
+            handleAvatarSelect(e) {
+                this.setState({});
+            }
+
+            handleAddComment(e) {
+                this.comments.push({
+                    name: this.commentName.value,
+                    avatar: this.commentAvatar.value,
+                    email: this.commentEmail.value,
+                    text: this.commentText.value,
+                    word: this.commentWord.value,
+                    edited: new Date()});
+                e.preventDefault();
+                this.setState({});
+            }
+
+            render() {
+                return <>{React.createElement("form", {style: {display: "flex", justifyContent: "center"}, onSubmit: this.handleAddComment},
+                    <div style={{margin: "10px", padding: "10px", width: "30%", backgroundColor: "rgb(209, 209, 209)"}}>
+                        <h1 style={{textAlign: "center"}}>Комментарий</h1>
+                        <div><label style={{width: "100%"}}>Имя<br/><input type="text" ref={(el) => this.commentName = el} style={{width: "100%"}} required/></label></div>
+                        <div><label style={{width: "100%"}}>Аватар<br/>
+                            <select ref={(el) => this.commentAvatar = el} onChange={this.handleAvatarSelect}>{avatars.map(avatar => <option value={avatar.url}>{avatar.name}</option>)}</select></label>
+                            {this.commentAvatar ? <div style={{display: "flex", justifyContent: "center"}}>
+                                <img src={this.commentAvatar.value} style={{maxWidth: "60%", maxHeight: "20vh"}}/>
+                            </div> : null}
+                        </div>
+                        <div><label style={{width: "100%"}}>Почта<br/><input type="email" ref={(el) => this.commentEmail = el} style={{width: "100%"}}/></label></div>
+                        <div><label style={{width: "100%"}}>Текст<br/><textarea ref={(el) => this.commentText = el} style={{width: "100%"}}/></label></div>
+                        <div><label style={{width: "100%"}}>Секретное слово<br/><input type="text" ref={(el) => this.commentWord = el} style={{width: "100%"}} required/></label></div>
+                        <div style={{display: "flex", justifyContent: "center"}}><input type="submit" value="Оставить комментарий"/></div>
+                    </div>)}
+                    <CommentsViewer comments={this.comments}
+                        renderEdit={(onEdit, commentText) => <CommentsEdit onEdit={onEdit} commentText={commentText}/>}
+                        renderDel={(onDelete, secretWord) => <CommentsDel onDelete={onDelete} secretWord={secretWord}/>}
+                        renderInfo={(onInfo, informing) => <CommentsInfo onInfo={onInfo} informing={informing}/>}/>
+                </>;
+            }
+        }
+
+        class CommentsViewer extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {};
+                this.handleShowEdit = this.handleShowEdit.bind(this);
+                this.handleEdit = this.handleEdit.bind(this);
+                this.handleShowDel = this.handleShowDel.bind(this);
+                this.handleDelete = this.handleDelete.bind(this);
+                this.handleShowInfo = this.handleShowInfo.bind(this);
+                this.handleInfo = this.handleInfo.bind(this);
+            }
+
+            handleShowEdit(e) {
+                this.setState({editing: e.target.value, deleting: null, informing: null});
+            }
+
+            handleEdit(e) {
+                this.props.comments[this.state.editing].text = this.commentText.value;
+                this.props.comments[this.state.editing].edited = new Date();
+                this.setState({editing: null});
+            }
+
+            handleShowDel(e) {
+                this.setState({editing: null, deleting: e.target.value, informing: null});
+            }
+
+            handleDelete(e) {
+                if(this.secretWord.value == this.props.comments[this.state.deleting].word)
+                    this.props.comments.splice(this.state.deleting, 1);
+                this.setState({deleting: null});
+            }
+
+            handleShowInfo(e) {
+                this.setState({editing: null, deleting: null, informing: e.target.value});
+            }
+
+            handleInfo(e) {
+                this.setState({informing: null});
+            }
+
+            render() {
+                let comments = [];
+                for(let i = 0; i < this.props.comments.length; i++) {
+                    let comment = this.props.comments[i];
+                    comments.push(<div style={{margin: "10px", padding: "10px", border: "1px solid black"}}>
+                        <p style={{margin: "0", fontWeight: "bold"}}>{comment.name}</p><p style={{margin: "0", padding: "10px"}}>{comment.text}</p>
+                        <div style={{display: "flex", justifyContent: "space-between", width: "30%"}}>
+                            <button onClick={this.handleShowEdit} value={i}>Изменить</button>
+                            <button onClick={this.handleShowDel} value={i}>Удалить</button>
+                            <button onClick={this.handleShowInfo} value={i}>Информация</button>
+                        </div>
+                    {this.state.informing == i ? this.props.renderInfo(this.handleInfo, this.props.comments[this.state.informing]) : null}
+                    </div>);
+                }
+                return <>{comments}
+                    {this.state.editing ? this.props.renderEdit(this.handleEdit, (el) => this.commentText = el) : null}
+                    {this.state.deleting ? this.props.renderDel(this.handleDelete, (el) => this.secretWord = el) : null}
+                </>;
+            }
+        }
+
+        function CommentsEdit(props) {
+            return <div className="modal">
+                    <div style={{padding: "10px", backgroundColor: "white", border: "2px solid gray", borderRadius: "5px"}}>
+                        <label style={{textAlign: "center"}}>Введите текст<br/><input ref={props.commentText} type="text"/></label>
+                        <div style={{display: "flex", justifyContent: "center"}}><input type="button" onClick={props.onEdit} value="Изменить"/></div>
+                    </div>
+                </div>;
+        }
+
+        function CommentsDel(props) {
+            return <div className="modal">
+                    <div style={{padding: "10px", backgroundColor: "white", border: "2px solid gray", borderRadius: "5px"}}>
+                        <label style={{textAlign: "center"}}>Введите секретное слово<br/><input ref={props.secretWord} type="text"/></label>
+                        <div style={{display: "flex", justifyContent: "center"}}><input type="button" onClick={props.onDelete} value="Удалить"/></div>
+                    </div>
+                </div>;
+        }
+
+        function CommentsInfo(props) {
+            return <div>
+                    <table style={{margin: "10px 0", backgroundColor: "rgb(192, 203, 212)"}}>
+                        <tr><td style={{minWidth: "200px"}}>Имя пользователя</td><td>{props.informing.name}</td></tr>
+                        <tr><td style={{minWidth: "200px"}}>Дата изменения</td><td>{props.informing.edited.toString()}</td></tr>
+                        <tr><td style={{minWidth: "200px"}}>Эл. почта</td><td>{props.informing.email}</td></tr>
+                    </table>
+                    <div><input type="button" onClick={props.onInfo} value="ОК"/></div>
+                </div>;
+        }
+
+        ReactDOM.render(<Comments/>, document.getElementById("comments"));
+        
+    </script>
+</body>
+</html>

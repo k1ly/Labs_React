@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Lab 3</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        div {
+            margin: 10px;
+        }
+        .sort-table, .sort-table td, .sort-table th {
+            padding: 5px;
+            border: 1px solid black;
+        }
+        .sort-table th {
+            background-color: gray;
+            color: white;
+        }
+        .sort-table th.attribute {
+            cursor: pointer;
+        }
+        .sort-table .few {
+            background-color: yellow;
+        }
+        .sort-table .none {
+            background-color: red;
+        }
+    </style>
+</head>
+<body>
+    <div id="phone-input"></div>
+    <div id="sort-table"></div>
+
+    <script type="text/babel">
+
+        class PhoneInput extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {selectedCountry: {}};
+                this.handleInput = this.handleInput.bind(this);
+                this.handleSelect = this.handleSelect.bind(this);
+            }
+
+            countryArray = [ {},
+                {name: "Беларусь", code: "+375", pattern: "+375 \d\d \d\d\d-\d\d-\d\d", operators: ["МТС", "A1", "life:)"]},
+                {name: "Украина", code: "+380", pattern: "+380 \d\d \d\d\d-\d\d-\d\d", operators: ["Lifecell", "Vodafone", "Київстар"]},
+                {name: "Литва", code: "+370", pattern: "+370 \d\d \d\d\d-\d\d-\d\d", operators: ["Telia", "Bite", "Tele2"]}
+            ]
+
+            handleInput(e) {
+                let country = this.countryArray.filter(country => e.target.value.startsWith(country.code));
+                if(country.length > 0 && this.state.phone.length < e.target.value.length) {
+                    e.target.value = e.target.value.substring(0, country[0].pattern.length);
+                    for(let i = country[0].code.length; i < country[0].pattern.length; i++) {
+                        if(country[0].pattern[i] != "\d" && e.target.value[i] != country[0].pattern[i]) {
+                            e.target.value = e.target.value.substring(0, i) + country[0].pattern[i] + e.target.value.substring(i);
+                        }
+                        else if(country[0].pattern[i] == "\d" && !e.target.value[i].match(/\d/)) {
+                            e.target.value = e.target.value.substring(0, i);
+                            break;
+                        }
+                        if(i == e.target.value.length - 1)
+                            break;
+                    }
+                }
+                this.setState({selectedCountry: (country.length > 0 ? country[0] : this.countryArray[0]), phone: e.target.value});
+            }
+            
+            handleSelect(e) {
+                let country = this.countryArray.filter(country => e.target.value == country.code);
+                document.getElementById("phone-number").value = country.length > 0 ? country[0].code : "";
+                this.setState({selectedCountry: (country.length > 0 ? country[0] : this.countryArray[0]), phone: e.target.value});
+            }
+
+            render() {
+                return <><div><input id="phone-number" type="text" onChange={(e) => this.handleInput(e)}/></div>
+                <div><select onChange={(e) => this.handleSelect(e)}>{this.countryArray.map(country =>
+                    <option value={country.code} selected={country === this.state.selectedCountry}>{country.name ?
+                        (country.name + " (" + country.code + ")") : null}</option>)}</select></div>
+                {this.state.selectedCountry.name ? <div>{this.countryArray.filter(country => country.code == this.state.selectedCountry.code)[0].operators
+                    .map(operator => <><label><input name="operator" type="radio" value={operator}/> {operator}</label><br/></>)}</div> : null}</>;
+            }
+        }
+
+        ReactDOM.render(<PhoneInput/>, document.getElementById("phone-input"));
+
+        const productArray = [
+                {name: "Butter", price: 3.40, quantity: 30},
+                {name: "Fish", price: 12.80, quantity: 0},
+                {name: "Water", price: 10.30, quantity: 11},
+                {name: "Milk", price: 6.10, quantity: 25},
+                {name: "Cheese", price: 15.00, quantity: 14}, 
+                {name: "Sausage", price: 9.30, quantity: 71},
+                {name: "Chocolate", price: 4.60, quantity: 2}
+            ]
+
+        class SortTable extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {};
+                this.handleSort = this.handleSort.bind(this);
+            }
+
+            handleSort(e) {
+                this.setState(prevState => ({attribute: e.target.dataset.name, asc: prevState.asc && prevState.attribute == e.target.dataset.name ? !prevState.asc : true}));
+            }
+
+            render() {
+                let asc = this.state.asc;
+                let comparator;
+                switch(this.state.attribute) {
+                    case "name": comparator = (a, b) => a.name == b.name ? 0 : (asc ? (a.name > b.name ? 1 : -1) : (a.name < b.name ? 1 : -1)); break;
+                    case "price": comparator = (a, b) => a.price == b.price ? 0 : (asc ? (a.price > b.price ? 1 : -1) : (a.price < b.price ? 1 : -1)); break;
+                    case "quantity": comparator = (a, b) => a.quantity == b.quantity ? 0 : (asc ? (a.quantity > b.quantity ? 1 : -1) : (a.quantity < b.quantity ? 1 : -1)); break;
+                }
+                this.props.array = this.props.array.sort(comparator);
+                let sort = asc != undefined ? (<svg style={{width: "10px", height: "10px"}}>
+                    <polygon points={asc ? "0,10 10,10 5,0" : "0,0 10,0 5,10"} style={{fill: "black"}}/></svg>) : null;
+                let header =
+                    <tr><th>№</th><th className="attribute" data-name="name" onClick={(e) => this.handleSort(e)}>Название {this.state.attribute == "name" ? sort : null}</th>
+                    <th className="attribute" data-name="price" onClick={(e) => this.handleSort(e)}>Цена {this.state.attribute == "price" ? sort : null}</th>
+                    <th className="attribute" data-name="quantity" onClick={(e) => this.handleSort(e)}>Кол-во {this.state.attribute == "quantity" ? sort : null}</th></tr>;
+                const rowArray = [];
+                this.props.array.map((value, index) => rowArray.push(React.createElement("tr", value.quantity == 0 ? {className: "none"}
+                : (value.quantity < 3 ? {className: "few"} : {}), <><td>{index}</td><td>{value.name}</td><td>{value.price}</td><td>{value.quantity}</td></>)))
+                return React.createElement("table", {className: "sort-table"}, header, rowArray);
+            }
+        }
+
+        ReactDOM.render(<SortTable array={productArray}/>, document.getElementById("sort-table"));
+    
+    </script>
+</body>
+</html>
